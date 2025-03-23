@@ -8,7 +8,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('/home/ubuntu/sports_predictor_web/logs/predictions_routes.log'),
+        logging.FileHandler('logs/predictions_routes.log')
         logging.StreamHandler()
     ]
 )

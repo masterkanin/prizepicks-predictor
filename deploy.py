@@ -16,14 +16,14 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('/home/ubuntu/sports_predictor_web/logs/deployment.log'),
+        logging.FileHandler('logs/deployment.log'),
         logging.StreamHandler()
     ]
 )
 logger = logging.getLogger('deployment')
 
 # Paths
-WEB_APP_PATH = '/home/ubuntu/sports_predictor_web'
+WEB_APP_PATH = '.'
 VENV_PATH = os.path.join(WEB_APP_PATH, 'venv')
 VENV_PYTHON = os.path.join(VENV_PATH, 'bin', 'python')
 VENV_PIP = os.path.join(VENV_PATH, 'bin', 'pip')

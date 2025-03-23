@@ -17,7 +17,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('/home/ubuntu/sports_predictor_web/logs/pipeline.log'),
+        logging.FileHandler('logs/pipeline.log'),
         logging.StreamHandler()
     ]
 )
@@ -25,7 +25,7 @@ logger = logging.getLogger('data_pipeline')
 
 # Paths
 PREDICTOR_PATH = '/home/ubuntu/sports_predictor/home/ubuntu/neural_sports_predictor'
-WEB_APP_PATH = '/home/ubuntu/sports_predictor_web'
+WEB_APP_PATH = '.'
 PREDICTIONS_OUTPUT_DIR = os.path.join(PREDICTOR_PATH, 'output', 'predictions')
 WEB_APP_VENV = os.path.join(WEB_APP_PATH, 'venv', 'bin', 'python')
 

@@ -25,7 +25,7 @@ def create_app(test_config=None):
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         handlers=[
-            logging.FileHandler(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs/app.log')),
+            logging.FileHandler(os.path.join('logs', 'app.log')),
             logging.StreamHandler()
         ]
     )

@@ -10,7 +10,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('/home/ubuntu/sports_predictor_web/logs/sportradar_api.log'),
+        logging.FileHandler('logs/sportradar_api.log'),
         logging.StreamHandler()
     ]
 )

@@ -17,7 +17,7 @@ def import_predictions():
     import json
     from datetime import datetime
     
-    predictor_output_dir = '/home/ubuntu/sports_predictor/home/ubuntu/neural_sports_predictor/output/predictions'
+    predictor_output_dir = 'output/predictions'
     
     if not os.path.exists(predictor_output_dir):
         print(f"Predictor output directory not found: {predictor_output_dir}")
