@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+
+{% block title %}PrizePicks Sports Predictor - Live Predictions{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar with filters -->
+        <div class="col-md-3 sidebar">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Filter Predictions</h5>
+                </div>
+                <div class="card-body">
+                    <form id="filter-form" method="GET" action="{{ url_for('predictions.index') }}">
+                        <div class="form-group mb-3">
+                            <label for="sport">Sport</label>
+                            <select class="form-control" id="sport" name="sport">
+                                <option value="">All Sports</option>
+                                {% for s in sports %}
+                                <option value="{{ s }}" {% if sport == s %}selected{% endif %}>{{ s }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="date-from">From Date</label>
+                            <input type="date" class="form-control" id="date-from" name="date_from" value="{{ date_from }}">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="date-to">To Date</label>
+                            <input type="date" class="form-control" id="date-to" name="date_to" value="{{ date_to }}">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="confidence">Confidence</label>
+                            <select class="form-control" id="confidence" name="confidence">
+                                <option value="">All Confidence Levels</option>
+                                {% for level in confidence_levels %}
+                                <option value="{{ level }}" {% if confidence == level %}selected{% endif %}>{{ level }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5>Quick Links</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        <li class="list-group-item">
+                            <a href="{{ url_for('predictions.high_confidence_predictions') }}">High Confidence Picks</a>
+                        </li>
+                        <li class="list-group-item">
+                            <a href="{{ url_for('predictions.trending_predictions') }}">Trending Predictions</a>
+                        </li>
+                        {% for s in sports %}
+                        <li class="list-group-item">
+                            <a href="{{ url_for('predictions.predictions_by_sport', sport=s) }}">{{ s }} Predictions</a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main content -->
+        <div class="col-md-9">
+            <div class="row mb-4">
+                <div class="col">
+                    <h2>Live Predictions</h2>
+                    <p class="text-muted">Showing predictions based on real-time data from Sportradar API</p>
+                </div>
+                <div class="col-auto">
+                    <button id="refresh-predictions" class="btn btn-outline-primary">
+                        <i class="fas fa-sync-alt"></i> Refresh Data
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Upcoming Games Section -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4>Upcoming Games</h4>
+                    <span class="badge bg-primary">Live Data</span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for game in upcoming_games %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100 game-card">
+                                <div class="card-header">
+                                    <span class="badge bg-info">{{ game.sport }}</span>
+                                    <span class="float-end">{{ game.scheduled_time.strftime('%b %d, %I:%M %p') }}</span>
+                                </div>
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ game.home_team }} vs {{ game.away_team }}</h5>
+                                    <p class="card-text">
+                                        <small class="text-muted">{{ game.venue }}</small>
+                                    </p>
+                                    <a href="{{ url_for('predictions.predictions_by_game', game_id=game.id) }}" class="btn btn-sm btn-outline-primary">View Predictions</a>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                No upcoming games found. Please check back later or update your filters.
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Predictions Section -->
+            <div class="card">
+                <div class="card-header">
+                    <h4>Predictions</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="predictions-table">
+                            <thead>
+                                <tr>
+                                    <th>Player</th>
+                                    <th>Team</th>
+                                    <th>Opponent</th>
+                                    <th>Date</th>
+                                    <th>Stat</th>
+                                    <th>Line</th>
+                                    <th>Prediction</th>
+                                    <th>Confidence</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="predictions-body">
+                                <!-- Predictions will be loaded via AJAX -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Load predictions on page load
+        loadPredictions();
+        
+        // Refresh button click handler
+        $('#refresh-predictions').click(function() {
+            loadPredictions();
+        });
+        
+        // Function to load predictions via AJAX
+        function loadPredictions() {
+            // Show loading indicator
+            $('#predictions-body').html('<tr><td colspan="9" class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>');
+            
+            // Get filter values
+            const sport = $('#sport').val();
+            const dateFrom = $('#date-from').val();
+            const dateTo = $('#date-to').val();
+            const confidence = $('#confidence').val();
+            
+            // Make API request
+            $.ajax({
+                url: '/api/predictions',
+                method: 'GET',
+                data: {
+                    sport: sport,
+                    date_from: dateFrom,
+                    date_to: dateTo,
+                    confidence: confidence
+                },
+                success: function(response) {
+                    if (response.success && response.predictions.length > 0) {
+                        // Clear table
+                        $('#predictions-body').empty();
+                        
+                        // Add predictions to table
+                        response.predictions.forEach(function(pred) {
+                            const row = `
+                                <tr>
+                                    <td>${pred.player_name}</td>
+                                    <td>${pred.team}</td>
+                                    <td>${pred.opponent}</td>
+                                    <td>${pred.game_date}</td>
+                                    <td>${pred.stat_type}</td>
+                                    <td>${pred.line.toFixed(1)}</td>
+                                    <td>
+                                        <span class="prediction-value">${pred.predicted_value.toFixed(1)}</span>
+                                        <div class="progress" style="height: 5px;">
+                                            <div class="progress-bar ${pred.over_probability > 0.5 ? 'bg-success' : 'bg-danger'}" 
+                                                role="progressbar" 
+                                                style="width: ${Math.max(pred.over_probability, 1 - pred.over_probability) * 100}%">
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">${pred.over_probability > 0.5 ? 'OVER' : 'UNDER'} (${(pred.over_probability * 100).toFixed(0)}%)</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge ${pred.confidence === 'High' ? 'bg-success' : pred.confidence === 'Medium' ? 'bg-warning' : 'bg-danger'}">
+                                            ${pred.confidence}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="/predictions/detail/${pred.id}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            `;
+                            $('#predictions-body').append(row);
+                        });
+                    } else {
+                        // Show no predictions message
+                        $('#predictions-body').html('<tr><td colspan="9" class="text-center">No predictions found. Try adjusting your filters.</td></tr>');
+                    }
+                },
+                error: function() {
+                    // Show error message
+                    $('#predictions-body').html('<tr><td colspan="9" class="text-center text-danger">Error loading predictions. Please try again.</td></tr>');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

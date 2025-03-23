@@ -1,0 +1,13 @@
+// Update base.html to include the JavaScript files for live data integration
+
+{% extends 'base.html' %}
+
+{% block scripts %}
+<!-- Include Chart.js library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+
+<!-- Include our custom JavaScript files -->
+<script src="{{ url_for('static', filename='js/data-service.js') }}"></script>
+<script src="{{ url_for('static', filename='js/chart-utilities.js') }}"></script>
+<script src="{{ url_for('static', filename='js/ui-controller.js') }}"></script>
+{% endblock %}

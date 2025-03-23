@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+
+{% block title %}PrizePicks Predictor - {{ prediction.player_name }} {{ prediction.stat_type }} Prediction{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Home</a></li>
+                    <li class="breadcrumb-item"><a href="/predictions">Predictions</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ prediction.player_name }} - {{ prediction.stat_type }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Player and Prediction Info -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3>{{ prediction.player_name }}</h3>
+                    <span class="badge bg-primary">{{ prediction.sport.upper() }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            {% if player and player.image_url %}
+                            <img src="{{ player.image_url }}" alt="{{ player.name }}" class="img-fluid rounded-circle player-image mb-3" style="max-width: 150px;">
+                            {% else %}
+                            <div class="player-placeholder mb-3">
+                                <i class="fas fa-user-circle fa-6x text-secondary"></i>
+                            </div>
+                            {% endif %}
+                            <h5>{{ prediction.team }}</h5>
+                            <p class="text-muted">vs {{ prediction.opponent }}</p>
+                        </div>
+                        <div class="col-md-8">
+                            <table class="table">
+                                <tbody>
+                                    <tr>
+                                        <th>Position:</th>
+                                        <td>{{ player.position if player else 'N/A' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Game Date:</th>
+                                        <td>{{ prediction.game_date.strftime('%B %d, %Y') }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Game Time:</th>
+                                        <td>{{ game.scheduled_time.strftime('%I:%M %p') if game else 'TBD' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Venue:</th>
+                                        <td>{{ game.venue if game else 'TBD' }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prediction Details -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Prediction Details</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="prediction-stat-card text-center p-4 border rounded mb-3">
+                                <h5>{{ prediction.stat_type }}</h5>
+                                <div class="d-flex justify-content-around align-items-center">
+                                    <div class="text-center">
+                                        <p class="text-muted mb-1">Line</p>
+                                        <h3>{{ prediction.line|round(1) }}</h3>
+                                    </div>
+                                    <div class="text-center">
+                                        <p class="text-muted mb-1">Predicted</p>
+                                        <h3>{{ prediction.predicted_value|round(1) }}</h3>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <div class="progress" style="height: 10px;">
+                                        <div class="progress-bar {{ 'bg-success' if prediction.over_probability > 0.5 else 'bg-danger' }}" 
+                                            role="progressbar" 
+                                            style="width: {{ (prediction.over_probability * 100)|round|int if prediction.over_probability > 0.5 else ((1 - prediction.over_probability) * 100)|round|int }}%">
+                                        </div>
+                                    </div>
+                                    <p class="mt-2">
+                                        <strong>{{ 'OVER' if prediction.over_probability > 0.5 else 'UNDER' }}</strong> 
+                                        ({{ (prediction.over_probability * 100)|round|int }}% confidence)
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="confidence-card text-center p-4 border rounded mb-3">
+                                <h5>Confidence Level</h5>
+                                <div class="confidence-indicator my-3">
+                                    <span class="badge {{ 'bg-success' if prediction.confidence == 'High' else 'bg-warning' if prediction.confidence == 'Medium' else 'bg-danger' }} p-3 fs-5">
+                                        {{ prediction.confidence }}
+                                    </span>
+                                </div>
+                                <p class="mt-3">
+                                    {% if prediction.confidence == 'High' %}
+                                    Our model has high confidence in this prediction based on historical data and current factors.
+                                    {% elif prediction.confidence == 'Medium' %}
+                                    Our model has moderate confidence in this prediction. Consider additional factors before deciding.
+                                    {% else %}
+                                    Our model has low confidence in this prediction. Proceed with caution.
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Key Factors -->
+                    <div class="key-factors mt-4">
+                        <h5>Key Factors</h5>
+                        <div class="row">
+                            {% if prediction.key_factors %}
+                                {% for factor in prediction.key_factors %}
+                                <div class="col-md-6 mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-check-circle text-success me-2"></i>
+                                        <span>{{ factor }}</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="col-12">
+                                    <p class="text-muted">Key factors not available for this prediction.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Visualization -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Historical Performance</h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="playerPerformanceChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Similar Predictions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Similar Predictions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for pred in similar_predictions %}
+                        <a href="{{ url_for('predictions.prediction_detail', prediction_id=pred.id) }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ pred.stat_type }} vs {{ pred.opponent }}</h6>
+                                <small>{{ pred.game_date.strftime('%m/%d/%y') }}</small>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <p class="mb-1">Line: {{ pred.line|round(1) }} | Pred: {{ pred.predicted_value|round(1) }}</p>
+                                <span class="badge {{ 'bg-success' if pred.confidence == 'High' else 'bg-warning' if pred.confidence == 'Medium' else 'bg-danger' }}">
+                                    {{ pred.confidence }}
+                                </span>
+                            </div>
+                        </a>
+                        {% else %}
+                        <div class="list-group-item">
+                            <p class="mb-0">No similar predictions found.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Team Info -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Team Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6 text-center">
+                            <h6>{{ home_team.name if home_team else game.home_team if game else prediction.team }}</h6>
+                            {% if home_team and home_team.logo_url %}
+                            <img src="{{ home_team.logo_url }}" alt="{{ home_team.name }}" class="img-fluid team-logo mb-2" style="max-height: 80px;">
+                            {% else %}
+                            <div class="team-placeholder mb-2">
+                                <i class="fas fa-shield-alt fa-3x text-secondary"></i>
+                            </div>
+                            {% endif %}
+                            <p class="mb-1">Record: {{ home_team.record if home_team else 'N/A' }}</p>
+                        </div>
+                        <div class="col-6 text-center">
+                            <h6>{{ away_team.name if away_team else game.away_team if game else prediction.opponent }}</h6>
+                            {% if away_team and away_team.logo_url %}
+                            <img src="{{ away_team.logo_url }}" alt="{{ away_team.name }}" class="img-fluid team-logo mb-2" style="max-height: 80px;">
+                            {% else %}
+                            <div class="team-placeholder mb-2">
+                                <i class="fas fa-shield-alt fa-3x text-secondary"></i>
+                            </div>
+                            {% endif %}
+                            <p class="mb-1">Record: {{ away_team.record if away_team else 'N/A' }}</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="recent-matchups mt-3">
+                        <h6>Recent Matchups</h6>
+                        <ul class="list-group list-group-flush">
+                            {% if game and game.recent_matchups %}
+                                {% for matchup in game.recent_matchups %}
+                                <li class="list-group-item">
+                                    <div class="d-flex justify-content-between">
+                                        <span>{{ matchup.date }}</span>
+                                        <span>{{ matchup.score }}</span>
+                                    </div>
+                                </li>
+                                {% endfor %}
+                            {% else %}
+                            <li class="list-group-item">No recent matchups available.</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Weather Info (if applicable) -->
+            {% if game and game.weather and prediction.sport in ['nfl', 'mlb'] %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Weather Conditions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="weather-info text-center">
+                        <i class="fas {{ 'fa-sun' if 'clear' in game.weather.condition.lower() else 'fa-cloud' if 'cloud' in game.weather.condition.lower() else 'fa-cloud-rain' if 'rain' in game.weather.condition.lower() else 'fa-snowflake' if 'snow' in game.weather.condition.lower() else 'fa-cloud-sun' }} fa-3x mb-3 text-primary"></i>
+                        <h6>{{ game.weather.condition }}</h6>
+                        <p class="mb-1">Temperature: {{ game.weather.temperature }}°F</p>
+                        <p class="mb-1">Wind: {{ game.weather.wind_speed }} mph</p>
+                        <p class="mb-0">Precipitation: {{ game.weather.precipitation_chance }}%</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Sample data for the chart - in production, this would come from the backend
+        const playerData = {
+            labels: [{% for pred in similar_predictions %}'{{ pred.game_date.strftime('%m/%d/%y') }}',{% endfor %}],
+            actual: [{% for pred in similar_predictions %}{{ pred.actual_value if pred.actual_value is not none else 'null' }},{% endfor %}],
+            predicted: [{% for pred in similar_predictions %}{{ pred.predicted_value }},{% endfor %}],
+            lines: [{% for pred in similar_predictions %}{{ pred.line }},{% endfor %}]
+        };
+        
+        // Add current prediction to the chart data
+        playerData.labels.unshift('{{ prediction.game_date.strftime('%m/%d/%y') }}');
+        playerData.predicted.unshift({{ prediction.predicted_value }});
+        playerData.lines.unshift({{ prediction.line }});
+        playerData.actual.unshift({{ prediction.actual_value if prediction.actual_value is not none else 'null' }});
+        
+        // Create the chart
+        const ctx = document.getElementById('playerPerformanceChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: playerData.labels,
+                datasets: [
+                    {
+                        label: 'Actual',
+                        data: playerData.actual,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+                        pointRadius: 5,
+                        fill: false
+                    },
+                    {
+                        label: 'Predicted',
+                        data: playerData.predicted,
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                        pointRadius: 5,
+                        fill: false
+                    },
+                    {
+                        label: 'Line',
+                        data: playerData.lines,
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+                        pointRadius: 5,
+                        borderDash: [5, 5],
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: '{{ prediction.stat_type }}'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Game Date'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrizePicks Predictor - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">PrizePicks Predictor</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/predictions">Predictions</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/dashboard">Dashboard</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h1>Performance Dashboard</h1>
+        
+        <div class="filters card p-3 mt-4">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="sportFilter">Sport</label>
+                        <select class="form-select" id="sportFilter">
+                            <option value="">All Sports</option>
+                            <!-- Sports will be populated dynamically -->
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="timeRangeFilter">Time Range</label>
+                        <select class="form-select" id="timeRangeFilter">
+                            <option value="7">Last 7 Days</option>
+                            <option value="30" selected>Last 30 Days</option>
+                            <option value="90">Last 90 Days</option>
+                            <option value="365">Last Year</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" id="applyFilters">Apply Filters</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="loading mt-5" id="loadingIndicator">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+        
+        <div class="dashboard-content mt-4" id="dashboardContent" style="display: none;">
+            <!-- Overall Performance Summary -->
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Predictions</h5>
+                            <p class="card-text display-4" id="totalPredictions">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Overall Accuracy</h5>
+                            <p class="card-text display-4" id="overallAccuracy">0%</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">High Confidence Accuracy</h5>
+                            <p class="card-text display-4" id="highConfidenceAccuracy">0%</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">High Confidence %</h5>
+                            <p class="card-text display-4" id="highConfidencePercentage">0%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Performance Charts -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">Accuracy by Sport</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="sportAccuracyChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">Accuracy by Confidence Level</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="confidenceAccuracyChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">Daily Performance Trend</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="dailyPerformanceChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Top Performers -->
+            <div class="row mt-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">Top Performing Predictions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Player</th>
+                                            <th>Sport</th>
+                                            <th>Stat</th>
+                                            <th>Predicted</th>
+                                            <th>Actual</th>
+                                            <th>Line</th>
+                                            <th>Result</th>
+                                            <th>Confidence</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="topPerformersTable">
+                                        <!-- Top performers will be populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-white mt-5 py-3">
+        <div class="container text-center">
+            <p>PrizePicks Predictor &copy; 2025</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get DOM elements
+            const sportFilter = document.getElementById('sportFilter');
+            const timeRangeFilter = document.getElementById('timeRangeFilter');
+            const applyFiltersBtn = document.getElementById('applyFilters');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const dashboardContent = document.getElementById('dashboardContent');
+            
+            // Chart objects
+            let sportAccuracyChart = null;
+            let confidenceAccuracyChart = null;
+            let dailyPerformanceChart = null;
+            
+            // Load sports for filter
+            fetch('/api/sports')
+                .then(response => response.json())
+                .then(sports => {
+                    sports.forEach(sport => {
+                        const option = document.createElement('option');
+                        option.value = sport;
+                        option.textContent = sport.toUpperCase();
+                        sportFilter.appendChild(option);
+                    });
+                });
+            
+            // Load dashboard data with default filters
+            loadDashboardData();
+            
+            // Add event listener for filter button
+            applyFiltersBtn.addEventListener('click', loadDashboardData);
+            
+            // Function to load dashboard data based on filters
+            function loadDashboardData() {
+                // Show loading indicator
+                loadingIndicator.style.display = 'flex';
+                dashboardContent.style.display = 'none';
+                
+                // Build query parameters
+                const params = new URLSearchParams();
+                if (sportFilter.value) params.append('sport', sportFilter.value);
+                params.append('days', timeRangeFilter.value);
+                
+                // Fetch performance data
+                fetch(`/api/performance?${params.toString()}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Hide loading indicator
+                        loadingIndicator.style.display = 'none';
+                        dashboardContent.style.display = 'block';
+                        
+                        // Update summary metrics
+                        document.getElementById('totalPredictions').textContent = data.total_predictions;
+                        document.getElementById('overallAccuracy').textContent = `${Math.round(data.accuracy)}%`;
+                        document.getElementById('highConfidenceAccuracy').textContent = `${Math.round(data.high_confidence_accuracy)}%`;
+                        
+                        const highConfidencePercentage = data.high_confidence_total / data.total_predictions * 100;
+                        document.getElementById('highConfidencePercentage').textContent = `${Math.round(highConfidencePercentage)}%`;
+                        
+                        // Update charts
+                        updateSportAccuracyChart(data.sport_performance);
+                        updateConfidenceAccuracyChart(data);
+                        updateDailyPerformanceChart(data);
+                        
+                        // Simulate top performers (in a real app, this would come from the API)
+                        updateTopPerformers();
+                    })
+                    .catch(error => {
+                        console.error('Error loading performance data:', error);
+                        loadingIndicator.style.display = 'none';
+                        dashboardContent.style.display = 'block';
+                        // Show error message
+                    });
+            }
+            
+            // Function to update sport accuracy chart
+            function updateSportAccuracyChart(sportPerformance) {
+                const ctx = document.getElementById('sportAccuracyChart').getContext('2d');
+                
+                // Destroy existing chart if it exists
+                if (sportAccuracyChart) {
+                    sportAccuracyChart.destroy();
+                }
+                
+                // Prepare data
+                const labels = sportPerformance.map(sport => sport.sport.toUpperCase());
+                const accuracyData = sportPerformance.map(sport => sport.accuracy);
+                const totalData = sportPerformance.map(sport => sport.total);
+                
+                // Create new chart
+                sportAccuracyChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Accuracy (%)',
+                            data: accuracyData,
+                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1,
+                            yAxisID: 'y'
+                        }, {
+                            label: 'Total Predictions',
+                            data: totalData,
+                            type: 'line',
+                            fill: false,
+                            backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            yAxisID: 'y1'
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Accuracy (%)'
+                                },
+                                max: 100
+                            },
+                            y1: {
+                                beginAtZero: true,
+                                position: 'right',
+                                grid: {
+                                    drawOnChartArea: false
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Total Predictions'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Function to update confidence accuracy chart
+            function updateConfidenceAccuracyChart(data) {
+                const ctx = document.getElementById('confidenceAccuracyChart').getContext('2d');
+                
+                // Destroy existing chart if it exists
+                if (confidenceAccuracyChart) {
+                    confidenceAccuracyChart.destroy();
+                }
+                
+                // Calculate medium and low confidence accuracy (simulated for this example)
+                // In a real app, this would come from the API
+                const mediumConfidenceAccuracy = Math.max(30, Math.min(80, data.accuracy - 5 + Math.random() * 10));
+                const lowConfidenceAccuracy = Math.max(20, Math.min(70, data.accuracy - 1<response clipped><NOTE>To save on context only part of this file has been shown to you. You should retry this tool after you have searched inside the file with `grep -n` in order to find the line numbers of what you are looking for.</NOTE>

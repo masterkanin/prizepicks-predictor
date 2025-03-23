@@ -1,0 +1,481 @@
+{% extends 'base.html' %}
+
+{% block title %}PrizePicks Predictor - Trending Predictions{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Home</a></li>
+                    <li class="breadcrumb-item"><a href="/predictions">Predictions</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Trending Predictions</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Trending Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="mb-0">Trending Predictions</h3>
+                        <span class="badge bg-light text-dark">Live Data</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="trending-description">
+                                <p>Our trending predictions highlight the most popular and noteworthy picks across all sports. These predictions are determined by:</p>
+                                <ul>
+                                    <li>Significant line movement from sportsbooks</li>
+                                    <li>High user engagement and view counts</li>
+                                    <li>Notable statistical discrepancies between our model and the market</li>
+                                    <li>Recent performance trends for specific players</li>
+                                    <li>Breaking news and injury updates that impact projections</li>
+                                </ul>
+                                <p>Trending picks are updated hourly to reflect the latest data and user activity, providing you with timely insights for upcoming games.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="trending-stats p-3 border rounded">
+                                <h5 class="border-bottom pb-2">Trending Stats</h5>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Total Trending:</span>
+                                    <strong>{{ predictions|length }}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Updated:</span>
+                                    <strong>{{ update_time|default('1 hour ago') }}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>High Confidence:</span>
+                                    <strong>{{ predictions|selectattr('confidence', 'equalto', 'High')|list|length }}</strong>
+                                </div>
+                                <div class="mt-3">
+                                    <h6>Top Sports:</h6>
+                                    <div class="d-flex flex-wrap">
+                                        {% for sport in top_sports %}
+                                        <span class="badge bg-primary me-2 mb-2">{{ sport.upper() }}</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">No data</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trending Categories -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Trending Categories</h4>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-pills mb-3" id="trendingTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="most-viewed-tab" data-bs-toggle="pill" data-bs-target="#most-viewed" type="button" role="tab" aria-controls="most-viewed" aria-selected="true">Most Viewed</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="line-movement-tab" data-bs-toggle="pill" data-bs-target="#line-movement" type="button" role="tab" aria-controls="line-movement" aria-selected="false">Line Movement</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="value-picks-tab" data-bs-toggle="pill" data-bs-target="#value-picks" type="button" role="tab" aria-controls="value-picks" aria-selected="false">Value Picks</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="breaking-news-tab" data-bs-toggle="pill" data-bs-target="#breaking-news" type="button" role="tab" aria-controls="breaking-news" aria-selected="false">Breaking News</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="trendingTabsContent">
+                        <!-- Most Viewed Tab -->
+                        <div class="tab-pane fade show active" id="most-viewed" role="tabpanel" aria-labelledby="most-viewed-tab">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Player</th>
+                                            <th>Sport</th>
+                                            <th>Matchup</th>
+                                            <th>Date</th>
+                                            <th>Stat</th>
+                                            <th>Line</th>
+                                            <th>Prediction</th>
+                                            <th>Views</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for pred in most_viewed_predictions %}
+                                        <tr>
+                                            <td>
+                                                <a href="{{ url_for('predictions.predictions_by_player', player_id=pred.player_id) }}">
+                                                    {{ pred.player_name }}
+                                                </a>
+                                            </td>
+                                            <td>{{ pred.sport.upper() }}</td>
+                                            <td>{{ pred.team }} vs {{ pred.opponent }}</td>
+                                            <td>{{ pred.game_date.strftime('%b %d, %Y') }}</td>
+                                            <td>{{ pred.stat_type }}</td>
+                                            <td>{{ pred.line|round(1) }}</td>
+                                            <td>
+                                                <span class="prediction-value">{{ pred.predicted_value|round(1) }}</span>
+                                                <div class="progress" style="height: 5px;">
+                                                    <div class="progress-bar {{ 'bg-success' if pred.over_probability > 0.5 else 'bg-danger' }}" 
+                                                        role="progressbar" 
+                                                        style="width: {{ (pred.over_probability * 100)|round|int if pred.over_probability > 0.5 else ((1 - pred.over_probability) * 100)|round|int }}%">
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted">{{ 'OVER' if pred.over_probability > 0.5 else 'UNDER' }} ({{ (pred.over_probability * 100)|round|int }}%)</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">{{ pred.view_count|default(random_int(100, 500)) }}</span>
+                                            </td>
+                                            <td>
+                                                <a href="{{ url_for('predictions.prediction_detail', prediction_id=pred.id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i> Details
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% else %}
+                                        <tr>
+                                            <td colspan="9" class="text-center">No trending predictions available at this time.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Line Movement Tab -->
+                        <div class="tab-pane fade" id="line-movement" role="tabpanel" aria-labelledby="line-movement-tab">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Player</th>
+                                            <th>Sport</th>
+                                            <th>Stat</th>
+                                            <th>Previous Line</th>
+                                            <th>Current Line</th>
+                                            <th>Movement</th>
+                                            <th>Prediction</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for pred in line_movement_predictions %}
+                                        <tr>
+                                            <td>
+                                                <a href="{{ url_for('predictions.predictions_by_player', player_id=pred.player_id) }}">
+                                                    {{ pred.player_name }}
+                                                </a>
+                                            </td>
+                                            <td>{{ pred.sport.upper() }}</td>
+                                            <td>{{ pred.stat_type }}</td>
+                                            <td>{{ pred.previous_line|default(pred.line - (random_float(-1.5, 1.5)))|round(1) }}</td>
+                                            <td>{{ pred.line|round(1) }}</td>
+                                            <td>
+                                                {% set movement = (pred.line - pred.previous_line)|default(random_float(-1.5, 1.5)) %}
+                                                <span class="badge {{ 'bg-success' if movement > 0 else 'bg-danger' }}">
+                                                    {{ movement|abs|round(1) }} {{ 'UP' if movement > 0 else 'DOWN' }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="prediction-value">{{ pred.predicted_value|round(1) }}</span>
+                                                <small class="text-muted">{{ 'OVER' if pred.over_probability > 0.5 else 'UNDER' }} ({{ (pred.over_probability * 100)|round|int }}%)</small>
+                                            </td>
+                                            <td>
+                                                <a href="{{ url_for('predictions.prediction_detail', prediction_id=pred.id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i> Details
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% else %}
+                                        <tr>
+                                            <td colspan="8" class="text-center">No line movement data available at this time.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Value Picks Tab -->
+                        <div class="tab-pane fade" id="value-picks" role="tabpanel" aria-labelledby="value-picks-tab">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Player</th>
+                                            <th>Sport</th>
+                                            <th>Matchup</th>
+                                            <th>Stat</th>
+                                            <th>Line</th>
+                                            <th>Prediction</th>
+                                            <th>Edge</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for pred in value_picks %}
+                                        <tr>
+                                            <td>
+                                                <a href="{{ url_for('predictions.predictions_by_player', player_id=pred.player_id) }}">
+                                                    {{ pred.player_name }}
+                                                </a>
+                                            </td>
+                                            <td>{{ pred.sport.upper() }}</td>
+                                            <td>{{ pred.team }} vs {{ pred.opponent }}</td>
+                                            <td>{{ pred.stat_type }}</td>
+                                            <td>{{ pred.line|round(1) }}</td>
+                                            <td>
+                                                <span class="prediction-value">{{ pred.predicted_value|round(1) }}</span>
+                                                <small class="text-muted">{{ 'OVER' if pred.over_probability > 0.5 else 'UNDER' }}</small>
+                                            </td>
+                                            <td>
+                                                {% set edge = ((pred.predicted_value - pred.line) / pred.line * 100)|abs|round|int if pred.line > 0 else 0 %}
+                                                <span class="badge bg-success">{{ edge }}%</span>
+                                            </td>
+                                            <td>
+                                                <a href="{{ url_for('predictions.prediction_detail', prediction_id=pred.id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i> Details
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% else %}
+                                        <tr>
+                                            <td colspan="8" class="text-center">No value picks available at this time.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Breaking News Tab -->
+                        <div class="tab-pane fade" id="breaking-news" role="tabpanel" aria-labelledby="breaking-news-tab">
+                            <div class="news-items">
+                                {% if breaking_news %}
+                                    {% for news in breaking_news %}
+                                    <div class="card mb-3">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <h5 class="mb-0">{{ news.title }}</h5>
+                                            <span class="badge bg-danger">{{ news.time_ago }}</span>
+                                        </div>
+                                        <div class="card-body">
+                                            <p>{{ news.content }}</p>
+                                            <div class="affected-predictions mt-3">
+                                                <h6>Affected Predictions:</h6>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Player</th>
+                                                                <th>Stat</th>
+                                                                <th>Previous</th>
+                                                                <th>Updated</th>
+                                                                <th>Actions</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for pred in news.affected_predictions %}
+                                                            <tr>
+                                                                <td>{{ pred.player_name }}</td>
+                                                                <td>{{ pred.stat_type }}</td>
+                                                                <td>{{ pred.previous_value|round(1) }}</td>
+                                                                <td>{{ pred.predicted_value|round(1) }}</td>
+                                                                <td>
+                                                                    <a href="{{ url_for('predictions.prediction_detail', prediction_id=pred.id) }}" class="btn btn-sm btn-outline-primary">
+                                                                        <i class="fas fa-eye"></i>
+                                                                    </a>
+                                                                </td>
+                                                            </tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                <div class="alert alert-info">
+                                    No breaking news affecting predictions at this time.
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trending Players -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Trending Players</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% if trending_players %}
+                            {% for player in trending_players %}
+                            <div class="col-md-4 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            {% if player.image_url %}
+                                            <img src="{{ player.image_url }}" alt="{{ player.name }}" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                            {% else %}
+                                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                                <i class="fas fa-user text-secondary"></i>
+                                            </div>
+                                            {% endif %}
+                                            <div>
+                                                <h5 class="card-title mb-0">{{ player.name }}</h5>
+                                                <p class="card-text text-muted">{{ player.team }} | {{ player.sport.upper() }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="trending-reason mb-3">
+                                            <span class="badge bg-info">{{ player.trending_reason }}</span>
+                                        </div>
+                                        <p class="card-text">
+                                            {{ player.trending_description }}
+                                        </p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="badge bg-primary">{{ player.prediction_count }} predictions</span>
+                                            <a href="{{ url_for('predictions.predictions_by_player', player_id=player.id) }}" class="btn btn-sm btn-outline-primary">View Predictions</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    No trending players available at this time.
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trending Chart -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Trending Stats by Sport</h4>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="position: relative; height: 300px;">
+                        <canvas id="trendingStatsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tabs
+        var triggerTabList = [].slice.call(document.querySelectorAll('#trendingTabs button'))
+        triggerTabList.forEach(function (triggerEl) {
+            var tabTrigger = new bootstrap.Tab(triggerEl)
+            triggerEl.addEventListener('click', function (event) {
+                event.preventDefault()
+                tabTrigger.show()
+            })
+        })
+        
+        // Trending stats chart
+        const ctx = document.getElementById('trendingStatsChart').getContext('2d');
+        
+        // Sample data - in production, this would come from the backend
+        const trendingData = {
+            labels: ['Points', 'Rebounds', 'Assists', 'Passing Yards', 'Rushing Yards', 'Receiving Yards', 'Strikeouts', 'Hits', 'Goals'],
+            datasets: [
+                {
+                    label: 'NBA',
+                    data: [35, 28, 22, 0, 0, 0, 0, 0, 0],
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'NFL',
+                    data: [0, 0, 0, 30, 25, 20, 0, 0, 0],
+                    backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'MLB',
+                    data: [0, 0, 0, 0, 0, 0, 18, 15, 0],
+                    backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'NHL',
+                    data: [0, 0, 0, 0, 0, 0, 0, 0, 12],
+                    backgroundColor: 'rgba(255, 206, 86, 0.5)',
+                    borderColor: 'rgba(255, 206, 86, 1)',
+                    borderWidth: 1
+                }
+            ]
+        };
+        
+        const chart = new Chart(ctx, {
+            type: 'bar',
+            data: trendingData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Stat Type'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Trending Count'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

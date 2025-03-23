@@ -1,0 +1,308 @@
+/* Main Styles for PrizePicks Sports Predictor */
+
+/* General Styles */
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.container-fluid {
+    flex: 1;
+}
+
+/* Navigation */
+.navbar-brand {
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.nav-link.active {
+    font-weight: 600;
+}
+
+/* Cards */
+.card {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    font-weight: 600;
+    background-color: #f8f9fa;
+}
+
+/* Prediction Cards */
+.prediction-card {
+    margin-bottom: 1.5rem;
+}
+
+.prediction-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.confidence-badge {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Game Cards */
+.game-card .team-logo-placeholder {
+    width: 50px;
+    height: 50px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
+    border-radius: 50%;
+}
+
+.vs-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Charts */
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin-bottom: 2rem;
+}
+
+/* Filters */
+.filter-section {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.filter-label {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+/* Tables */
+.table th {
+    font-weight: 600;
+    background-color: #f8f9fa;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Stats */
+.stat-card {
+    text-align: center;
+    padding: 1.5rem;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+/* Player Profile */
+.player-profile {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.player-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+}
+
+.player-info h3 {
+    margin-bottom: 0.25rem;
+}
+
+.player-team {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+/* Footer */
+footer {
+    margin-top: auto;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .stat-value {
+        font-size: 1.5rem;
+    }
+    
+    .player-avatar {
+        width: 60px;
+        height: 60px;
+    }
+}
+
+/* Loading Spinner */
+.spinner-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+}
+
+/* Prediction Detail Page */
+.prediction-detail-header {
+    background-color: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 0.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.prediction-detail-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+.prediction-detail-line {
+    font-size: 1.5rem;
+    color: #6c757d;
+}
+
+.prediction-factors {
+    margin-top: 1.5rem;
+}
+
+.factor-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.factor-name {
+    font-weight: 600;
+}
+
+.factor-value {
+    color: #6c757d;
+}
+
+/* Dashboard */
+.performance-card {
+    text-align: center;
+    padding: 1.5rem;
+}
+
+.performance-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.performance-label {
+    font-size: 1rem;
+    color: #6c757d;
+}
+
+/* Trending Page */
+.trending-header {
+    margin-bottom: 2rem;
+}
+
+.trending-tabs {
+    margin-bottom: 1.5rem;
+}
+
+/* High Confidence Page */
+.confidence-header {
+    margin-bottom: 2rem;
+}
+
+.confidence-filter {
+    margin-bottom: 1.5rem;
+}
+
+/* Sport Predictions Page */
+.sport-header {
+    margin-bottom: 2rem;
+}
+
+.sport-icon {
+    font-size: 2rem;
+    margin-right: 1rem;
+}
+
+/* Game Predictions Page */
+.game-header {
+    margin-bottom: 2rem;
+}
+
+.team-vs-team {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.team-logo {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
+    border-radius: 50%;
+    margin: 0 1.5rem;
+}
+
+.vs-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 1rem;
+}
+
+/* Player Predictions Page */
+.player-header {
+    margin-bottom: 2rem;
+}
+
+.player-stats {
+    margin-bottom: 1.5rem;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.stat-name {
+    font-weight: 600;
+}
+
+.stat-value {
+    color: #6c757d;
+}

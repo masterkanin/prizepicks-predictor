@@ -1,0 +1,482 @@
+{% extends 'base.html' %}
+
+{% block title %}PrizePicks Predictor - {{ player.name }} Predictions{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Home</a></li>
+                    <li class="breadcrumb-item"><a href="/predictions">Predictions</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ player.name }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Player Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="mb-0">{{ player.name }}</h3>
+                        <span class="badge bg-light text-dark">{{ player.sport.upper() }}</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center">
+                            {% if player.image_url %}
+                            <img src="{{ player.image_url }}" alt="{{ player.name }}" class="img-fluid rounded-circle player-image mb-3" style="max-width: 150px;">
+                            {% else %}
+                            <div class="player-placeholder mb-3">
+                                <i class="fas fa-user-circle fa-6x text-secondary"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-5">
+                            <h4>{{ player.name }}</h4>
+                            <p class="mb-1"><strong>Team:</strong> {{ player.team }}</p>
+                            <p class="mb-1"><strong>Position:</strong> {{ player.position }}</p>
+                            <p class="mb-1"><strong>Age:</strong> {{ player.age if player.age else 'N/A' }}</p>
+                            <p class="mb-1"><strong>Experience:</strong> {{ player.experience if player.experience else 'N/A' }}</p>
+                            <p class="mb-3"><strong>Status:</strong> 
+                                <span class="badge {{ 'bg-success' if player.status == 'Active' else 'bg-danger' }}">
+                                    {{ player.status if player.status else 'Active' }}
+                                </span>
+                            </p>
+                            {% if team %}
+                            <div class="team-info d-flex align-items-center">
+                                {% if team.logo_url %}
+                                <img src="{{ team.logo_url }}" alt="{{ team.name }}" class="img-fluid team-logo me-2" style="max-height: 40px;">
+                                {% endif %}
+                                <span>{{ team.name }} ({{ team.record if team.record else 'Record N/A' }})</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <div class="player-stats p-3 border rounded">
+                                <h5 class="border-bottom pb-2">Season Stats</h5>
+                                {% if player.season_stats %}
+                                    {% for stat_name, stat_value in player.season_stats.items() %}
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>{{ stat_name }}:</span>
+                                        <strong>{{ stat_value }}</strong>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                <div class="text-center py-3">
+                                    <p class="text-muted mb-0">Season stats not available</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Visualization -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Performance Trends</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="chart-container" style="position: relative; height: 300px;">
+                                <canvas id="playerPerformanceChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-selector mb-3">
+                                <label for="statTypeSelect" class="form-label">Select Stat Type</label>
+                                <select class="form-select" id="statTypeSelect">
+                                    {% set stat_types = [] %}
+                                    {% for pred in predictions %}
+                                        {% if pred.stat_type not in stat_types %}
+                                            {% set stat_types = stat_types + [pred.stat_type] %}
+                                            <option value="{{ pred.stat_type }}">{{ pred.stat_type }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="performance-summary p-3 border rounded">
+                                <h5 class="border-bottom pb-2">Summary</h5>
+                                <div id="statSummary">
+                                    <!-- Will be populated by JavaScript -->
+                                    <div class="text-center py-3">
+                                        <p class="text-muted mb-0">Select a stat type to view summary</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Predictions Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4>Predictions</h4>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary active" id="upcomingBtn">Upcoming</button>
+                        <button type="button" class="btn btn-outline-primary" id="pastBtn">Past</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="predictionsTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Opponent</th>
+                                    <th>Stat</th>
+                                    <th>Line</th>
+                                    <th>Prediction</th>
+                                    <th>Actual</th>
+                                    <th>Result</th>
+                                    <th>Confidence</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="upcomingPredictions">
+                                {% for pred in predictions if pred.game_date >= now.date() %}
+                                <tr>
+                                    <td>{{ pred.game_date.strftime('%b %d, %Y') }}</td>
+                                    <td>{{ pred.opponent }}</td>
+                                    <td>{{ pred.stat_type }}</td>
+                                    <td>{{ pred.line|round(1) }}</td>
+                                    <td>
+                                        <span class="prediction-value">{{ pred.predicted_value|round(1) }}</span>
+                                        <div class="progress" style="height: 5px;">
+                                            <div class="progress-bar {{ 'bg-success' if pred.over_probability > 0.5 else 'bg-danger' }}" 
+                                                role="progressbar" 
+                                                style="width: {{ (pred.over_probability * 100)|round|int if pred.over_probability > 0.5 else ((1 - pred.over_probability) * 100)|round|int }}%">
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">{{ 'OVER' if pred.over_probability > 0.5 else 'UNDER' }} ({{ (pred.over_probability * 100)|round|int }}%)</small>
+                                    </td>
+                                    <td>-</td>
+                                    <td>-</td>
+                                    <td>
+                                        <span class="badge {{ 'bg-success' if pred.confidence == 'High' else 'bg-warning' if pred.confidence == 'Medium' else 'bg-danger' }}">
+                                            {{ pred.confidence }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('predictions.prediction_detail', prediction_id=pred.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="9" class="text-center">No upcoming predictions for {{ player.name }}.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tbody id="pastPredictions" style="display: none;">
+                                {% for pred in predictions if pred.game_date < now.date() %}
+                                <tr>
+                                    <td>{{ pred.game_date.strftime('%b %d, %Y') }}</td>
+                                    <td>{{ pred.opponent }}</td>
+                                    <td>{{ pred.stat_type }}</td>
+                                    <td>{{ pred.line|round(1) }}</td>
+                                    <td>
+                                        <span class="prediction-value">{{ pred.predicted_value|round(1) }}</span>
+                                    </td>
+                                    <td>{{ pred.actual_value|round(1) if pred.actual_value is not none else 'N/A' }}</td>
+                                    <td>
+                                        {% if pred.actual_value is not none %}
+                                            {% if (pred.over_probability > 0.5 and pred.actual_value > pred.line) or (pred.over_probability < 0.5 and pred.actual_value < pred.line) %}
+                                                <span class="badge bg-success">CORRECT</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">INCORRECT</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge bg-secondary">PENDING</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge {{ 'bg-success' if pred.confidence == 'High' else 'bg-warning' if pred.confidence == 'Medium' else 'bg-danger' }}">
+                                            {{ pred.confidence }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('predictions.prediction_detail', prediction_id=pred.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="9" class="text-center">No past predictions for {{ player.name }}.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Similar Players -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Similar Players</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% if similar_players %}
+                            {% for similar_player in similar_players %}
+                            <div class="col-md-4 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            {% if similar_player.image_url %}
+                                            <img src="{{ similar_player.image_url }}" alt="{{ similar_player.name }}" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                            {% else %}
+                                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                                <i class="fas fa-user text-secondary"></i>
+                                            </div>
+                                            {% endif %}
+                                            <div>
+                                                <h5 class="card-title mb-0">{{ similar_player.name }}</h5>
+                                                <p class="card-text text-muted">{{ similar_player.team }}</p>
+                                            </div>
+                                        </div>
+                                        <p class="card-text">
+                                            <small class="text-muted">Position: {{ similar_player.position }}</small>
+                                        </p>
+                                        <a href="{{ url_for('predictions.predictions_by_player', player_id=similar_player.id) }}" class="btn btn-sm btn-outline-primary">View Predictions</a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    No similar players found.
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle between upcoming and past predictions
+        const upcomingBtn = document.getElementById('upcomingBtn');
+        const pastBtn = document.getElementById('pastBtn');
+        const upcomingPredictions = document.getElementById('upcomingPredictions');
+        const pastPredictions = document.getElementById('pastPredictions');
+        
+        upcomingBtn.addEventListener('click', function() {
+            upcomingPredictions.style.display = 'table-row-group';
+            pastPredictions.style.display = 'none';
+            upcomingBtn.classList.add('active');
+            pastBtn.classList.remove('active');
+        });
+        
+        pastBtn.addEventListener('click', function() {
+            upcomingPredictions.style.display = 'none';
+            pastPredictions.style.display = 'table-row-group';
+            pastBtn.classList.add('active');
+            upcomingBtn.classList.remove('active');
+        });
+        
+        // Performance chart
+        const statTypeSelect = document.getElementById('statTypeSelect');
+        const statSummary = document.getElementById('statSummary');
+        
+        // Sample data structure for player stats by type
+        // In production, this would be passed from the backend
+        const playerStats = {
+            {% for stat_type in stat_types %}
+            '{{ stat_type }}': {
+                dates: [{% for pred in predictions if pred.stat_type == stat_type %}'{{ pred.game_date.strftime('%m/%d/%y') }}',{% endfor %}],
+                predicted: [{% for pred in predictions if pred.stat_type == stat_type %}{{ pred.predicted_value }},{% endfor %}],
+                actual: [{% for pred in predictions if pred.stat_type == stat_type %}{{ pred.actual_value if pred.actual_value is not none else 'null' }},{% endfor %}],
+                lines: [{% for pred in predictions if pred.stat_type == stat_type %}{{ pred.line }},{% endfor %}]
+            },
+            {% endfor %}
+        };
+        
+        let performanceChart = null;
+        
+        // Function to update chart based on selected stat type
+        function updateChart(statType) {
+            const ctx = document.getElementById('playerPerformanceChart').getContext('2d');
+            
+            if (performanceChart) {
+                performanceChart.destroy();
+            }
+            
+            if (!playerStats[statType]) {
+                return;
+            }
+            
+            const data = playerStats[statType];
+            
+            performanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.dates,
+                    datasets: [
+                        {
+                            label: 'Actual',
+                            data: data.actual,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+                            pointRadius: 5,
+                            fill: false
+                        },
+                        {
+                            label: 'Predicted',
+                            data: data.predicted,
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                            pointRadius: 5,
+                            fill: false
+                        },
+                        {
+                            label: 'Line',
+                            data: data.lines,
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+                            pointRadius: 5,
+                            borderDash: [5, 5],
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: statType
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Game Date'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    }
+                }
+            });
+            
+            // Update summary
+            updateStatSummary(statType);
+        }
+        
+        // Function to update stat summary
+        function updateStatSummary(statType) {
+            if (!playerStats[statType]) {
+                return;
+            }
+            
+            const data = playerStats[statType];
+            
+            // Calculate average predicted and actual values
+            const predictedValues = data.predicted.filter(val => val !== null);
+            const actualValues = data.actual.filter(val => val !== null);
+            
+            const avgPredicted = predictedValues.length > 0 ? 
+                (predictedValues.reduce((a, b) => a + b, 0) / predictedValues.length).toFixed(1) : 'N/A';
+            
+            const avgActual = actualValues.length > 0 ? 
+                (actualValues.reduce((a, b) => a + b, 0) / actualValues.length).toFixed(1) : 'N/A';
+            
+            // Calculate accuracy
+            let correctPredictions = 0;
+            let totalCompletedPredictions = 0;
+            
+            for (let i = 0; i < data.predicted.length; i++) {
+                if (data.actual[i] !== null) {
+                    totalCompletedPredictions++;
+                    
+                    // Check if prediction was correct (over/under)
+                    const predictedOver = data.predicted[i] > data.lines[i];
+                    const actualOver = data.actual[i] > data.lines[i];
+                    
+                    if (predictedOver === actualOver) {
+                        correctPredictions++;
+                    }
+                }
+            }
+            
+            const accuracy = totalCompletedPredictions > 0 ? 
+                ((correctPredictions / totalCompletedPredictions) * 100).toFixed(0) + '%' : 'N/A';
+            
+            // Update the summary HTML
+            statSummary.innerHTML = `
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Avg. Predicted:</span>
+                    <strong>${avgPredicted}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Avg. Actual:</span>
+                    <strong>${avgActual}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Prediction Accuracy:</span>
+                    <strong>${accuracy}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Games Analyzed:</span>
+                    <strong>${totalCompletedPredictions}</strong>
+                </div>
+            `;
+        }
+        
+        // Initialize with first stat type
+        if (statTypeSelect.options.length > 0) {
+            const initialStatType = statTypeSelect.options[0].value;
+            updateChart(initialStatType);
+        }
+        
+        // Add event listener for stat type change
+        statTypeSelect.addEventListener('change', function() {
+            updateChart(this.value);
+        });
+    });
+</script>
+{% endblock %}
