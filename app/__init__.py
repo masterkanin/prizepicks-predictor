@@ -7,6 +7,9 @@ from app.models.prediction import db
 from app.routes.main import main_bp
 from app.routes.predictions import predictions_bp
 from app.routes.api import api_bp
+from app.routes.import_route import import_bp
+app.register_blueprint(import_bp, url_prefix='/import')
+
 
 def create_app(test_config=None):
     """Create and configure the Flask application"""
