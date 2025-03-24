@@ -28,3 +28,28 @@ def run_import():
             'success': False,
             'message': f'Exception: {str(e)}'
         }), 500
+
+@import_bp.route('/check-schema', methods=['GET'])
+def check_schema():
+    try:
+        # Run the schema check script
+        result = subprocess.run(['python', 'check_schema.py'], 
+                               capture_output=True, text=True)
+        
+        if result.returncode == 0:
+            return jsonify({
+                'success': True,
+                'message': 'Schema check completed',
+                'details': result.stdout
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Error checking schema',
+                'details': result.stderr
+            }), 500
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Exception: {str(e)}'
+        }), 500
