@@ -8,9 +8,6 @@ from app.routes.main import main_bp
 from app.routes.predictions import predictions_bp
 from app.routes.api import api_bp
 from app.routes.import_route import import_bp
-app.register_blueprint(import_bp, url_prefix='/import')
-
-
 
 def create_app(test_config=None):
     """Create and configure the Flask application"""
@@ -41,6 +38,7 @@ def create_app(test_config=None):
     app.register_blueprint(main_bp)
     app.register_blueprint(predictions_bp, url_prefix='/predictions')
     app.register_blueprint(api_bp, url_prefix='/api')
+    app.register_blueprint(import_bp, url_prefix='/import')  # Added this line inside the function
     
     # Create database tables
     with app.app_context():
